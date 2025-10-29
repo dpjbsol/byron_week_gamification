@@ -1,54 +1,7 @@
+// js/pages/dpj.js
 import { scorePresence, scoreWorkshop, scoreComponent } from "../rules.js";
 import { addLog } from "../storage.js";
-import { ensureDpjAccess } from "../guard.js";
-
-/* ===== Guard de acesso DPJ (já com sua senha local) ===================== */
-function ensureDpjAccess(db, save, container) {
-  if (!ensureDpjAccess(db, save, container)) return;
-  if (sessionStorage.getItem("byron_dpj_auth") === "1") return true;
-
-  const pwdSaved = db?.config?.security?.dpjPassword || "";
-  let secret = pwdSaved;
-
-  if (!secret) {
-    if (!confirm("Nenhuma senha do DPJ está definida.\nDeseja definir agora?")) {
-      renderDenied(container); return false;
-    }
-    const set = prompt("Defina uma senha para o DPJ:");
-    if (!set) { renderDenied(container); return false; }
-    db.config = db.config || {};
-    db.config.security = db.config.security || {};
-    db.config.security.dpjPassword = set;
-    save(db);
-    secret = set;
-    alert("Senha do DPJ definida.");
-  }
-
-  const entered = prompt("Senha do DPJ:");
-  if (entered === secret) {
-    sessionStorage.setItem("byron_dpj_auth", "1");
-    return true;
-  }
-  alert("Senha incorreta.");
-  renderDenied(container);
-  return false;
-
-  function renderDenied(el){
-    el.innerHTML = `
-      <div class="panel">
-        <h2>Acesso restrito • DPJ</h2>
-        <p class="help">Você precisa da senha do DPJ para continuar.</p>
-        <div class="grid cols-2" style="max-width:460px;">
-          <button id="retry" class="ok">Tentar novamente</button>
-          <button id="back" class="ghost">Voltar</button>
-        </div>
-      </div>`;
-    const $ = q => el.querySelector(q);
-    $("#retry").onclick = () => { sessionStorage.removeItem("byron_dpj_auth"); location.hash = "#/dpj"; };
-    $("#back").onclick = () => history.back();
-  }
-}
-/* ======================================================================= */
+import { ensureDpjAccess } from "../guard.js"; // usa o guard compartilhado
 
 export function DPJPage(container, db, save) {
   if (!ensureDpjAccess(db, save, container)) return;
@@ -100,7 +53,6 @@ export function DPJPage(container, db, save) {
 
   const $ = q => container.querySelector(q);
 
-  /* ===== Helpers de ação ================================================= */
   function actionButtonsPending() {
     return `
       <div class="grid cols-3">
@@ -141,7 +93,6 @@ export function DPJPage(container, db, save) {
     renderAll();
   }
 
-  /* ===== Renderers ======================================================= */
   function renderPresence() {
     const showApproved = $("#show-approved-pres").checked;
     const scope = db.presence.filter(p => showApproved ? p.status==="APROVADO" : p.status==="PENDENTE");
@@ -172,8 +123,7 @@ export function DPJPage(container, db, save) {
         };
       });
     } else {
-      // Aprovar/Reprovar pendentes
-      $("#t-pres").querySelectorAll(".approve").forEach((btn, idx)=>{
+      $("#t-pres").querySelectorAll(".approve").forEach((btn)=>{
         btn.onclick = ()=>{
           const row = btn.closest("tr");
           const id = row.dataset.id;
@@ -311,7 +261,6 @@ export function DPJPage(container, db, save) {
     renderComponents();
   }
 
-  // re-render ao trocar o toggle “mostrar aprovados”
   ["#show-approved-pres", "#show-approved-work", "#show-approved-comp"].forEach(sel=>{
     $(sel).onchange = renderAll;
   });
