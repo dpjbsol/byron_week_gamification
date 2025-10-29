@@ -1,0 +1,238 @@
+/* ====== Design Tokens ===================================================== */
+:root {
+  /* Core */
+  --bg: #070b18;
+  --bg-2: #0b1020;
+  --panel: #0e1735;
+  --panel-2: #111c42;
+  --text: #eaf0ff;
+  --muted: #9fb0ffcc;
+  --muted-2: #a8b5ff66;
+  --border: #25336b;
+
+  /* Brand / Accents */
+  --brand: #7e8cff;
+  --brand-2: #5363ff;
+
+  /* State */
+  --ok: #37d67a;
+  --ok-2: #1f9b58;
+  --warn: #ffc153;
+  --bad: #ff6b6f;
+
+  /* Effects */
+  --shadow-sm: 0 6px 22px rgba(0,0,0,.25);
+  --shadow: 0 10px 35px rgba(0,0,0,.35);
+  --ring: 0 0 0 2px #ffffff0d, 0 0 0 6px #7788ff33;
+
+  /* Layout */
+  --radius: 16px;
+  --radius-lg: 22px;
+
+  /* Controls */
+  --control-bg: #0b1330;
+  --control-bg-2: #0c1436;
+  --control-border: #2a397a;
+  --control-hover: #12225a;
+  --control-focus: #2c3f9a;
+}
+
+/* ====== Base ============================================================== */
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+  color: var(--text);
+  background:
+    radial-gradient(1200px 600px at 20% -20%, #16235a 0%, #0b1020 55%, #070b18 100%),
+    linear-gradient(180deg, #060913, #090d1d);
+  letter-spacing: .2px;
+  color-scheme: dark; /* tenta forçar widgets nativos ao dark */
+}
+
+/* ====== Header / Tabs ===================================================== */
+.app-header {
+  position: sticky; top:0; z-index: 50;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in oklab, var(--bg-2) 60%, transparent);
+  backdrop-filter: blur(10px) saturate(120%);
+}
+.app-header h1 { margin:0; font-size: 18px; font-weight: 700; letter-spacing: .5px; }
+.tabs { display:flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.tabs a {
+  text-decoration: none; color: var(--text); opacity:.9;
+  padding: 8px 12px; border-radius: 999px; border:1px solid var(--border);
+  background: linear-gradient(180deg, #0e1637, #0b1230);
+  transition: transform .15s, box-shadow .15s, opacity .15s;
+  box-shadow: var(--shadow-sm);
+}
+.tabs a:hover { opacity: 1; transform: translateY(-1px); box-shadow: var(--shadow); }
+.tabs a.active {
+  border-color: var(--brand);
+  background: linear-gradient(180deg, color-mix(in oklab, var(--brand) 18%, #0e1637), #0b1230);
+  box-shadow: 0 0 0 1px var(--brand) inset, var(--shadow);
+}
+
+/* ====== App / Panels ====================================================== */
+#app { padding: 28px; max-width: 1100px; margin: 0 auto; }
+.panel {
+  background:
+    linear-gradient(180deg, #0f1a3f, #0e1736) padding-box,
+    linear-gradient(180deg, #2b3d86, #1e2f72) border-box;
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  box-shadow: var(--shadow);
+  animation: rise .18s ease-out;
+}
+
+/* ====== Grid ============================================================== */
+.grid { display: grid; gap: 16px; align-items: start; }
+.grid.cols-2 { grid-template-columns: 1.1fr 1fr; }
+.grid.cols-3 { grid-template-columns: repeat(3,1fr); }
+@media (max-width: 1024px){ .grid.cols-2{ grid-template-columns:1fr; } }
+@media (max-width: 900px){ .grid.cols-3{ grid-template-columns:1fr; } }
+
+/* ====== Typography ========================================================= */
+h2 { margin: 0 0 8px; font-size: 22px; }
+h3 { margin: 0 0 10px; font-size: 16px; color: var(--muted); }
+label { font-size: 13px; opacity: .95; display: grid; gap: 6px; }
+.help { font-size: 12px; color: var(--muted); }
+
+/* ====== Controls (inputs/selects/textarea) ================================ */
+input, select, textarea, button { font: inherit; color: var(--text); }
+
+input, select, textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--control-border);
+  background: linear-gradient(180deg, var(--control-bg), var(--control-bg-2));
+  outline: none;
+  transition: border-color .15s, box-shadow .15s, background .2s;
+  color-scheme: dark;
+}
+input::placeholder, textarea::placeholder { color: var(--muted-2); }
+input:focus, select:focus, textarea:focus {
+  border-color: var(--control-focus);
+  box-shadow: var(--ring);
+}
+
+/* ---------- SELECT: seta custom a 3px da borda --------------------------- */
+select {
+  color: var(--text);
+  /* troca a seta nativa por uma SVG branca */
+  appearance: none; -webkit-appearance: none; -moz-appearance: none;
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='white'><path d='M4.2 6.2a1 1 0 0 1 1.4 0L8 8.6l2.4-2.4a1 1 0 1 1 1.4 1.4L8.7 10.7a1 1 0 0 1-1.4 0L4.2 7.6a1 1 0 0 1 0-1.4z'/></svg>");
+  background-repeat: no-repeat;
+  background-size: 12px 12px;
+  background-position: right 3px center; /* 👈 pedido: 3px da borda */
+  padding-right: 30px; /* espaço para a seta */
+}
+option {
+  color: var(--text);
+  background: #0f1b44;
+}
+option:checked { background: #14235c linear-gradient(#14235c, #14235c); }
+option:hover { background: #1b2a62; }
+
+/* ---------- DATE/TIME: ícones claros e mais próximos --------------------- */
+input[type="date"], input[type="time"] {
+  padding-right: 30px; /* espaço pro indicador + setinhas */
+}
+
+/* ícone calendário/relogio (Chrome/Edge) – claro e a 3px da borda */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator{
+  filter: invert(1) brightness(1.25) contrast(1.05); /* deixa branco/visível */
+  opacity: .95;
+  cursor: pointer;
+  padding: 4px;
+  margin-right: 3px;   /* 👈 aproximado (antes estava grande) */
+  border-radius: 8px;
+  background-color: transparent; /* sem “bolota” preta */
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover{
+  background: #ffffff10;
+}
+
+/* setinhas (spin) no time/number – com respiro e visíveis no dark */
+input[type="time"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-inner-spin-button{
+  filter: invert(1) brightness(1.2);
+  margin: 0 3px; /* pequeno respiro */
+}
+
+/* Checkbox */
+input[type="checkbox"]{ width: 18px; height: 18px; accent-color: var(--brand-2); }
+
+/* ====== Buttons =========================================================== */
+button {
+  cursor: pointer;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border:1px solid #2a3b86;
+  background: linear-gradient(180deg, #273a88, #1d2e72);
+  font-weight: 700; letter-spacing: .2px;
+  box-shadow: var(--shadow-sm);
+  transition: transform .12s, box-shadow .12s, filter .2s;
+}
+button:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+button:active { transform: translateY(0); filter: brightness(.98); }
+button.ghost { background: transparent; border-style: dashed; color: var(--muted); }
+button.ok    { background: linear-gradient(180deg, #259b61, #1b6f40); border-color: #185b36; }
+button.warn  { background: linear-gradient(180deg, #b07a1a, #8a610e); border-color: #80590d; }
+button.bad   { background: linear-gradient(180deg, #b13a3e, #8a2c2f); border-color: #7c2226; }
+
+/* ====== Table ============================================================== */
+.table { width:100%; border-collapse: separate; border-spacing: 0 10px; }
+.table thead th {
+  color: var(--muted); font-weight: 700; text-transform: uppercase;
+  font-size: 11px; letter-spacing: .6px; padding: 0 10px 6px;
+  border-bottom: 1px solid var(--border);
+}
+.table tbody tr { transition: transform .12s, background .2s; }
+.table tbody td {
+  padding: 12px 14px;
+  background: linear-gradient(180deg, #0f1a3f, #0e1736);
+  border: 1px solid var(--border);
+}
+.table tbody td:first-child { border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
+.table tbody td:last-child  { border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
+.table tbody tr:hover td { background: #111c42; }
+
+/* ====== Chips / Tags ====================================================== */
+.tag {
+  display:inline-flex; align-items:center; gap:6px;
+  padding: 4px 10px; border-radius: 999px;
+  border:1px solid var(--border);
+  font-size: 12px; color: var(--muted); background: #0c1436;
+}
+.tag.ok   { border-color:#1f6f44; color:#7de0a8; background: #0f1f2a; }
+.tag.bad  { border-color:#8a2c2f; color:#ffa1a4; background: #2b1416; }
+.tag.warn { border-color:#8a610e; color:#ffd18a; background: #2b1e0f; }
+
+/* KPI */
+.kpi { display:inline-flex; gap:8px; align-items:center; font-weight:800; }
+
+/* ====== Footer & Focus ==================================================== */
+.app-footer { padding: 30px 20px; opacity: .7; text-align:center; font-size: 12px; }
+a, button, input, select, textarea { outline-offset: 3px; }
+a:focus-visible, button:focus-visible,
+input:focus-visible, select:focus-visible, textarea:focus-visible { box-shadow: var(--ring); }
+
+/* ====== Motion ============================================================ */
+@keyframes rise { from { transform: translateY(4px); opacity: .0; } to { transform: translateY(0); opacity: 1; } }
+
+/* ====== Mobile tweaks ===================================================== */
+@media (max-width: 520px){
+  .tabs { gap:6px; }
+  #app { padding: 18px; }
+  .panel { padding: 18px; border-radius: 16px; }
+  button { padding: 11px 14px; border-radius: 12px; }
+  input, select, textarea { border-radius: 12px; }
+}
