@@ -1,38 +1,47 @@
+// js/app.js
 import { setDB, getDB } from "./storage.js";
 import { setActiveTab } from "./utils.js";
-import { PresencePage } from "./pages/presence.js";
-import { WorkshopPage } from "./pages/workshop.js";
-import { ComponentPage } from "./pages/component.js";
-import { DPJPage } from "./pages/dpj.js";
-import { RankingPage } from "./pages/ranking.js";
-import { LogsPage } from "./pages/logs.js";
-import { SettingsPage } from "./pages/settings.js";
 
+/**
+ * Usa a MESMA versão que o index passou.
+ * Se o index não passar nada, gera uma por sessão.
+ */
+const V =
+  new URL(import.meta.url).search ||
+  `?${(window.APP_V ||= `v=${Date.now().toString(36)}`)}`;
+
+/**
+ * Rotas com import dinâmico já herdando a mesma query (?v=...)
+ * Assim você nunca fica preso em cache de módulo.
+ */
 const routes = {
-  "/presence": PresencePage,
-  "/workshop": WorkshopPage,
-  "/component": ComponentPage,
-  "/dpj": DPJPage,
-  "/ranking": RankingPage,
-  "/logs": LogsPage,
-  "/settings": SettingsPage
+  "/presence": () => import(`./pages/presence.js${V}`).then(m => m.PresencePage),
+  "/workshop": () => import(`./pages/workshop.js${V}`).then(m => m.WorkshopPage),
+  "/component": () => import(`./pages/component.js${V}`).then(m => m.ComponentPage),
+  "/dpj": () => import(`./pages/dpj.js${V}`).then(m => m.DPJPage),
+  "/ranking": () => import(`./pages/ranking.js${V}`).then(m => m.RankingPage),
+  "/logs": () => import(`./pages/logs.js${V}`).then(m => m.LogsPage),
+  "/settings": () => import(`./pages/settings.js${V}`).then(m => m.SettingsPage),
 };
 
 export function mountApp(root) {
-  function render() {
+  async function render() {
     setActiveTab();
     const db = getDB();
     const hash = (location.hash || "#/presence").slice(1);
-    const Page = routes[hash] || PresencePage;
+    const loader = routes[hash] || routes["/presence"];
+    const Page = await loader();
+
     root.innerHTML = "";
     const el = document.createElement("div");
     el.className = "panel";
-    Page(el, db, (updated)=> {
+    Page(el, db, (updated) => {
       if (updated) setDB(updated);
       render();
     });
     root.appendChild(el);
   }
+
   window.addEventListener("hashchange", render);
   render();
 }

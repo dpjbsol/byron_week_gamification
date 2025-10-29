@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <title>byron.week · Gamificação</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link href="./assets/styles.css" rel="stylesheet" />
+  <link id="app-css" href="./assets/styles.css" rel="stylesheet" />
 </head>
 <body>
   <header class="app-header">
@@ -26,16 +26,24 @@
     <small>Funciona 100% local (sem backend). Horário: America/Sao_Paulo.</small>
   </footer>
 
-<script type="module">
-  import "./js/utils.js?v=4";
-  import { initStorage } from "./js/storage.js?v=4";
-  import { rtInit } from "./js/realtime.js?v=4";
-  import { mountApp } from "./js/app.js?v=4";
+  <script type="module">
+    // Uma versão única para TODOS os imports desta aba
+    const V = `v=${Date.now().toString(36)}`;
+    window.APP_V = V;
 
-  initStorage();
-  rtInit();
-  mountApp(document.getElementById("app"));
-</script>
+    // (Opcional) forçar recarregar o CSS junto
+    const css = document.getElementById("app-css");
+    if (css && !css.href.includes("?")) css.href = `${css.href}?${V}`;
 
+    // Importa módulos com a mesma versão (evita cache de JS)
+    await import(`./js/utils.js?${V}`);
+    const { initStorage } = await import(`./js/storage.js?${V}`);
+    const { rtInit }      = await import(`./js/realtime.js?${V}`);
+    const { mountApp }    = await import(`./js/app.js?${V}`);
+
+    initStorage();
+    rtInit();
+    mountApp(document.getElementById("app"));
+  </script>
 </body>
 </html>
