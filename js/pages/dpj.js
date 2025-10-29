@@ -1,8 +1,10 @@
 import { scorePresence, scoreWorkshop, scoreComponent } from "../rules.js";
 import { addLog } from "../storage.js";
+import { ensureDpjAccess } from "../guard.js";
 
 /* ===== Guard de acesso DPJ (já com sua senha local) ===================== */
 function ensureDpjAccess(db, save, container) {
+  if (!ensureDpjAccess(db, save, container)) return;
   if (sessionStorage.getItem("byron_dpj_auth") === "1") return true;
 
   const pwdSaved = db?.config?.security?.dpjPassword || "";
