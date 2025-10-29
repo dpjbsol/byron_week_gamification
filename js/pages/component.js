@@ -107,7 +107,7 @@ export function ComponentPage(container, db, save) {
 
   function renderTable(){
     const rows = db.components
-      .filter(c => c.status === "PENDENTE") /* só pendentes: somem após aprovação */
+      .filter(c => c.status === "PENDENTE") 
       .slice(0,100)
       .map(c=>{
         const pts = scoreComponent(db, c);

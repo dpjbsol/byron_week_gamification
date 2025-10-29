@@ -1,14 +1,11 @@
-// Timezone helpers (America/Sao_Paulo)
 export const TZ = "America/Sao_Paulo";
 
 export function nowISO() {
-  // Use local time as ISO string without timezone
   const d = new Date();
   return toLocalISO(d);
 }
 
 export function toLocalISO(d) {
-  // yyyy-mm-ddThh:mm:ss (no timezone) to match tool-free parsing
   const pad = (n)=> String(n).padStart(2,"0");
   const yyyy = d.getFullYear();
   const mm = pad(d.getMonth()+1);
@@ -20,7 +17,6 @@ export function toLocalISO(d) {
 }
 
 export function parseLocal(dateStr) {
-  // Accepts "YYYY-MM-DD" or "YYYY-MM-DDTHH:mm"
   return new Date(dateStr.replace(" ", "T"));
 }
 

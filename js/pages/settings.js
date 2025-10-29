@@ -1,12 +1,13 @@
-import { getDB, setDB, resetDB } from "../storage.js";
+import { getDB, setDB } from "../storage.js";
 
 export function SettingsPage(container, db, save) {
   const cfg = db.config;
 
   container.innerHTML = `
     <h2>Configurações</h2>
+
     <div class="grid cols-3">
-      <section>
+      <section class="panel">
         <h3>Pontos</h3>
         <label>Palestra (padrão) <input id="pt-lecture" type="number" value="${cfg.points.lecture}"/></label>
         <label>Palestra (alternativo) <input id="pt-lecture-alt" type="number" value="${cfg.points.lectureAlt}"/></label>
@@ -17,7 +18,7 @@ export function SettingsPage(container, db, save) {
         <label>Código+Doc <input id="pt-codedoc" type="number" value="${cfg.points.codeDoc}"/></label>
       </section>
 
-      <section>
+      <section class="panel">
         <h3>Multiplicadores</h3>
         <label>Salinha padrão <input id="mult-salinha" type="number" step="0.05" value="${cfg.multipliers.salinha}"/></label>
         <label>Salinha (segunda feriado) <input id="mult-salinha-mon" type="number" step="0.05" value="${cfg.multipliers.salinhaMondayHoliday}"/></label>
@@ -26,7 +27,7 @@ export function SettingsPage(container, db, save) {
         <label>Dificuldade Difícil <input id="diff-hard" type="number" step="0.05" value="${cfg.multipliers.difficulty['Difícil']}"/></label>
       </section>
 
-      <section>
+      <section class="panel">
         <h3>Janelas e Fechamento</h3>
         <label>Validação DPJ (início) <input id="win-start" type="time" value="${cfg.windows.dpjStart}"/></label>
         <label>Validação DPJ (fim) <input id="win-end" type="time" value="${cfg.windows.dpjEnd}"/></label>
@@ -36,7 +37,25 @@ export function SettingsPage(container, db, save) {
         <label>Data/hora de fechamento <input id="closing-at" type="datetime-local" value="${cfg.closing?.closeAt || ""}"/></label>
       </section>
     </div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h3>Segurança (DPJ)</h3>
+      <div class="grid cols-3" style="max-width:800px;">
+        <label>Senha do DPJ
+          <input id="sec-dpj" type="password" placeholder="defina ou altere a senha" value="${(db.config.security?.dpjPassword || "")}">
+        </label>
+        <div class="grid" style="align-items:end;">
+          <button id="sec-save" class="ok">Salvar senha</button>
+        </div>
+        <div class="grid" style="align-items:end;">
+          <button id="sec-logout" class="ghost">Encerrar sessão DPJ (esta aba)</button>
+        </div>
+      </div>
+      <span class="help">A senha fica apenas no seu navegador (localStorage). Ao abrir “Validações DPJ”, ela será solicitada.</span>
+    </div>
+
     <hr class="sep"/>
+
     <div class="grid cols-3">
       <button id="save" class="ok">Salvar configurações</button>
       <button id="reset" class="warn">Reset (manter dados)</button>
@@ -77,7 +96,7 @@ export function SettingsPage(container, db, save) {
 
   $("#reset").onclick = ()=>{
     const keep = getDB();
-    setDB(keep); // força normalização simples
+    setDB(keep);
     alert("Config regravada; dados mantidos.");
     location.reload();
   };
@@ -86,5 +105,17 @@ export function SettingsPage(container, db, save) {
     if (!confirm("Apagar TUDO (inclui usuários e lançamentos)?")) return;
     localStorage.clear();
     location.reload();
+  };
+
+  $("#sec-save").onclick = ()=>{
+    const v = $("#sec-dpj").value.trim();
+    db.config.security = db.config.security || {};
+    db.config.security.dpjPassword = v;
+    save(db);
+    alert("Senha do DPJ salva.");
+  };
+  $("#sec-logout").onclick = ()=>{
+    sessionStorage.removeItem("byron_dpj_auth");
+    alert("Sessão DPJ desta aba foi encerrada. Ao abrir “Validações DPJ” vai pedir a senha.");
   };
 }

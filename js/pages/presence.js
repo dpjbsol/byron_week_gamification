@@ -77,29 +77,24 @@ export function PresencePage(container, db, save) {
       return null;
     }
 
-    // cria (ou atualiza) a sessão daquele dia
     let session = db.sessions.find(s => s.title===title && s.date===date);
     if (!session) {
       session = { id: uuid(), title, date, start, end };
       db.sessions.push(session);
     } else {
-      // atualiza horários se editaram
       session.start = start;
       session.end = end;
     }
 
-    // cria (ou reaproveita) a presença do usuário nessa sessão
     let pres = db.presence.find(p => p.sessionId===session.id && p.userId===userId);
     if (!pres) {
       pres = { id: uuid(), userId, sessionId: session.id, checkInISO: "", checkOutISO: "", status: "PENDENTE", dpjComment: "" };
       db.presence.unshift(pres);
     }
 
-    // marcações (se marcar, gravamos timestamp agora)
     if (markIn)  pres.checkInISO  = nowISO();
     if (markOut) pres.checkOutISO = nowISO();
 
-    // sempre volta para "PENDENTE" ao (re)lançar
     pres.status = "PENDENTE";
     pres.dpjComment = "";
 
