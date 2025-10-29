@@ -1,7 +1,42 @@
 import { scorePresence, scoreWorkshop, scoreComponent } from "../rules.js";
 import { addLog } from "../storage.js";
+import { DPJ_PASSWORD } from "../config.js"; 
+
+function ensureDpjAccess(container) {
+  if (sessionStorage.getItem("byron_dpj_auth") === "1") return true;
+
+  const entered = prompt("Senha do DPJ:");
+  if (entered === DPJ_PASSWORD) {
+    sessionStorage.setItem("byron_dpj_auth", "1");
+    return true;
+  }
+
+  alert("Senha incorreta.");
+  renderDenied(container);
+  return false;
+
+  function renderDenied(containerEl){
+    containerEl.innerHTML = `
+      <div class="panel">
+        <h2>Acesso restrito • DPJ</h2>
+        <p class="help">Você precisa da senha do DPJ para continuar.</p>
+        <div class="grid cols-2" style="max-width:460px;">
+          <button id="retry" class="ok">Tentar novamente</button>
+          <button id="back" class="ghost">Voltar</button>
+        </div>
+      </div>`;
+    const $ = (q)=> containerEl.querySelector(q);
+    $("#retry").onclick = () => {
+      sessionStorage.removeItem("byron_dpj_auth");
+      location.hash = "#/dpj"; 
+    };
+    $("#back").onclick = () => history.back();
+  }
+}
 
 export function DPJPage(container, db, save) {
+  if (!ensureDpjAccess(container)) return;
+
   container.innerHTML = `
     <h2>Validações DPJ</h2>
     <div class="grid">
@@ -28,15 +63,72 @@ export function DPJPage(container, db, save) {
       </section>
     </div>
   `;
+
   const $ = (q)=> container.querySelector(q);
 
-  function actionButtons(onApprove, onReject) {
+  function actionButtons() {
     return `
       <div class="grid cols-3">
         <button class="ok approve">Aprovar</button>
         <button class="bad reject">Reprovar</button>
         <input placeholder="Comentário (opcional)" class="dpj-comment"/>
       </div>`;
+  }
+
+  function renderPresence() {
+    const pendPres = db.presence.filter(p=>p.status==="PENDENTE");
+    $("#t-pres").innerHTML = pendPres.map(p=>{
+      const user = db.users.find(u=>u.id===p.userId)?.name || "?";
+      const sess = db.sessions.find(s=>s.id===p.sessionId);
+      p.kind = "PALESTRA";
+      return `<tr>
+        <td>${user}</td>
+        <td>${sess?.title || "?"}<br><span class="help">${sess?.date} ${sess?.start}–${sess?.end || "?"}</span></td>
+        <td><span class="help">in</span> ${p.checkInISO || "-"}<br><span class="help">out</span> ${p.checkOutISO || "-"}</td>
+        <td>${actionButtons()}</td>
+      </tr>`;
+    }).join("") || `<tr><td colspan="4" class="help">Sem pendências.</td></tr>`;
+
+    bindRowEvents(pendPres, $("#t-pres"), (item)=> scorePresence(db, item));
+  }
+
+  function renderWorkshops() {
+    const pendWork = db.workshops.filter(w=>w.status==="PENDENTE");
+    $("#t-work").innerHTML = pendWork.map(w=>{
+      const user = db.users.find(u=>u.id===w.userId)?.name || "?";
+      w.kind = "OFICINA";
+      return `<tr>
+        <td>${user}</td>
+        <td>${w.date}</td>
+        <td>${w.mode}</td>
+        <td>${actionButtons()}</td>
+      </tr>`;
+    }).join("") || `<tr><td colspan="4" class="help">Sem pendências.</td></tr>`;
+
+    bindRowEvents(pendWork, $("#t-work"), (item)=> scoreWorkshop(db, item));
+  }
+
+  function renderComponents() {
+    const pendComp = db.components.filter(c=>c.status==="PENDENTE");
+    $("#t-comp").innerHTML = pendComp.map(c=>{
+      const user = db.users.find(u=>u.id===c.userId)?.name || "?";
+      c.kind = "COMPONENTE";
+      return `<tr>
+        <td>${user}</td>
+        <td>${c.name}</td>
+        <td>${c.stage}${c.stage==="CODEDOC"?` (${c.difficulty})`:""}</td>
+        <td>${c.salinha?'<span class="tag">salinha</span>':''} ${c.ideaPronta?'<span class="tag warn">ideia pronta</span>':''}</td>
+        <td>${actionButtons()}</td>
+      </tr>`;
+    }).join("") || `<tr><td colspan="5" class="help">Sem pendências.</td></tr>`;
+
+    bindRowEvents(pendComp, $("#t-comp"), (item)=> scoreComponent(db, item));
+  }
+
+  function renderAll() {
+    renderPresence();
+    renderWorkshops();
+    renderComponents();
   }
 
   function bindRowEvents(scope, list, scorer) {
@@ -47,9 +139,9 @@ export function DPJPage(container, db, save) {
         const item = scope[idx];
         item.status = "APROVADO";
         item.dpjComment = comment;
+
         const pts = scorer(item);
-        if (pts>0) {
-          // registrar log
+        if (pts > 0) {
           addLog(db, {
             userId: item.userId,
             kind: "PONTOS",
@@ -59,8 +151,10 @@ export function DPJPage(container, db, save) {
           });
         }
         save(db);
+        renderAll();
       };
     });
+
     list.querySelectorAll(".reject").forEach((btn, idx)=>{
       btn.onclick = ()=>{
         const row = btn.closest("tr");
@@ -69,51 +163,10 @@ export function DPJPage(container, db, save) {
         item.status = "REPROVADO";
         item.dpjComment = comment || "Revisar em até 6h.";
         save(db);
+        renderAll();
       };
     });
   }
 
-  // Palestras
-  const pendPres = db.presence.filter(p=>p.status==="PENDENTE");
-  $("#t-pres").innerHTML = pendPres.map(p=>{
-    const user = db.users.find(u=>u.id===p.userId)?.name || "?";
-    const sess = db.sessions.find(s=>s.id===p.sessionId);
-    p.kind = "PALESTRA";
-    return `<tr>
-      <td>${user}</td>
-      <td>${sess?.title || "?"}<br><span class="help">${sess?.date} ${sess?.start}–${sess?.end || "?"}</span></td>
-      <td><span class="help">in</span> ${p.checkInISO || "-"}<br><span class="help">out</span> ${p.checkOutISO || "-"}</td>
-      <td>${actionButtons()}</td>
-    </tr>`;
-  }).join("") || `<tr><td colspan="4" class="help">Sem pendências.</td></tr>`;
-  bindRowEvents(pendPres, $("#t-pres"), (item)=> scorePresence(db, item));
-
-  // Oficinas
-  const pendWork = db.workshops.filter(w=>w.status==="PENDENTE");
-  $("#t-work").innerHTML = pendWork.map(w=>{
-    const user = db.users.find(u=>u.id===w.userId)?.name || "?";
-    w.kind = "OFICINA";
-    return `<tr>
-      <td>${user}</td>
-      <td>${w.date}</td>
-      <td>${w.mode}</td>
-      <td>${actionButtons()}</td>
-    </tr>`;
-  }).join("") || `<tr><td colspan="4" class="help">Sem pendências.</td></tr>`;
-  bindRowEvents(pendWork, $("#t-work"), (item)=> scoreWorkshop(db, item));
-
-  // Componentes
-  const pendComp = db.components.filter(c=>c.status==="PENDENTE");
-  $("#t-comp").innerHTML = pendComp.map(c=>{
-    const user = db.users.find(u=>u.id===c.userId)?.name || "?";
-    c.kind = "COMPONENTE";
-    return `<tr>
-      <td>${user}</td>
-      <td>${c.name}</td>
-      <td>${c.stage}${c.stage==="CODEDOC"?` (${c.difficulty})`:""}</td>
-      <td>${c.salinha?'<span class="tag">salinha</span>':''} ${c.ideaPronta?'<span class="tag warn">ideia pronta</span>':''}</td>
-      <td>${actionButtons()}</td>
-    </tr>`;
-  }).join("") || `<tr><td colspan="5" class="help">Sem pendências.</td></tr>`;
-  bindRowEvents(pendComp, $("#t-comp"), (item)=> scoreComponent(db, item));
+  renderAll();
 }

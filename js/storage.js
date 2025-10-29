@@ -1,10 +1,16 @@
 import { uuid, nowISO } from "./utils.js";
 
-const KEY = "byron_week_gamify_v1";
+export const STORAGE_KEY = "byron_week_gamify_v1";
+const KEY = STORAGE_KEY;
+
+function deepClone(obj) {
+  try { return structuredClone(obj); }
+  catch { return JSON.parse(JSON.stringify(obj)); }
+}
 
 const seedConfig = {
   points: {
-    lecture: 25,           // palestra (padrão 25; modo alternativo 35)
+    lecture: 25,           
     lectureAlt: 35,
     workshopPerDay: 30,
     idea: 20,
@@ -12,7 +18,7 @@ const seedConfig = {
     codeDoc: 70
   },
   multipliers: {
-    difficulty: { // aplicado ao Code+Doc
+    difficulty: {
       "Base": 1.00,
       "Médio": 1.20,
       "Difícil": 1.30
@@ -26,18 +32,21 @@ const seedConfig = {
     dayCutoff: "23:59"
   },
   flags: {
-    mondayHolidayDate: "", // YYYY-MM-DD (aplica +10% salinha somente nesse dia)
-    lectureUsesAlt: false  // se true usa 35 pts
+    mondayHolidayDate: "", 
+    lectureUsesAlt: false  
   },
   closing: {
     enabled: false,
-    closeAt: "" // "YYYY-MM-DDTHH:mm"
+    closeAt: ""
+  },
+  security: {
+    dpjPassword: ""
   }
 };
 
 const initial = {
   config: seedConfig,
-users: [
+  users: [
     { id: uuid(), name: "Ana Clara" },
     { id: uuid(), name: "Bianca Rossi" },
     { id: uuid(), name: "Breno Yukihiro Hirakawa" },
@@ -66,31 +75,77 @@ users: [
     { id: uuid(), name: "Victor Hugo Rodrigues Pereira" },
     { id: uuid(), name: "Victória Shirley Avelino da Silva" },
     { id: uuid(), name: "Vinicius Kody Murakami" }
-    ],
-  sessions: [], // {id, title, date, start, end}
-  presence: [], // {id, userId, sessionId, checkInISO, checkOutISO, status:'PENDENTE|APROVADO|REPROVADO', dpjComment}
-  workshops: [], // {id, userId, date, mode:'PRESENCIAL|AVANCO', createdAtISO, status, dpjComment}
-  components: [], // {id, userId, name, stage:'IDEIA|FIGMA|CODEDOC', difficulty, salinha, ideaPronta, createdAtISO, status, dpjComment}
-  logs: [] // {id, userId, kind, refId, points, details, createdAtISO}
+  ],
+  sessions: [],  
+  presence: [],   
+  workshops: [],  
+  components: [],
+  logs: []        
 };
+
+function normalizeDB(db) {
+  const out = db || {};
+  out.config = out.config || deepClone(seedConfig);
+
+  out.config.points        = { ...seedConfig.points, ...(out.config.points || {}) };
+  out.config.multipliers   = {
+    ...seedConfig.multipliers,
+    ...(out.config.multipliers || {}),
+    difficulty: {
+      ...seedConfig.multipliers.difficulty,
+      ...(out.config.multipliers?.difficulty || {})
+    }
+  };
+  out.config.windows       = { ...seedConfig.windows, ...(out.config.windows || {}) };
+  out.config.flags         = { ...seedConfig.flags,   ...(out.config.flags || {}) };
+  out.config.closing       = { ...seedConfig.closing, ...(out.config.closing || {}) };
+  out.config.security      = { ...seedConfig.security, ...(out.config.security || {}) };
+
+  out.users      = Array.isArray(out.users)      ? out.users      : [];
+  out.sessions   = Array.isArray(out.sessions)   ? out.sessions   : [];
+  out.presence   = Array.isArray(out.presence)   ? out.presence   : [];
+  out.workshops  = Array.isArray(out.workshops)  ? out.workshops  : [];
+  out.components = Array.isArray(out.components) ? out.components : [];
+  out.logs       = Array.isArray(out.logs)       ? out.logs       : [];
+
+  return out;
+}
 
 export function getDB() {
   const raw = localStorage.getItem(KEY);
   if (!raw) {
-    localStorage.setItem(KEY, JSON.stringify(initial));
-    return structuredClone(initial);
+    const fresh = normalizeDB(deepClone(initial));
+    localStorage.setItem(KEY, JSON.stringify(fresh));
+    return deepClone(fresh);
   }
-  try { return JSON.parse(raw); }
-  catch { localStorage.setItem(KEY, JSON.stringify(initial)); return structuredClone(initial); }
+  try {
+    return normalizeDB(JSON.parse(raw));
+  } catch {
+    const fresh = normalizeDB(deepClone(initial));
+    localStorage.setItem(KEY, JSON.stringify(fresh));
+    return deepClone(fresh);
+  }
 }
 
 export function setDB(db) {
-  localStorage.setItem(KEY, JSON.stringify(db));
+  const norm = normalizeDB(db);
+  localStorage.setItem(KEY, JSON.stringify(norm));
+  document.dispatchEvent(new CustomEvent("db:changed"));
+  return norm;
 }
 
 export function resetDB(hard=false) {
   if (hard) localStorage.removeItem(KEY);
-  setDB(structuredClone(initial));
+  const fresh = normalizeDB(deepClone(initial));
+  localStorage.setItem(KEY, JSON.stringify(fresh));
+  document.dispatchEvent(new CustomEvent("db:changed"));
+  return fresh;
+}
+
+export function updateDB(mutator) {
+  const db = getDB();
+  mutator(db);
+  return setDB(db);
 }
 
 export function addLog(db, { userId, kind, refId, points, details }) {
@@ -100,9 +155,6 @@ export function addLog(db, { userId, kind, refId, points, details }) {
   });
 }
 
-
-// Adicione isto em js/storage.js
 export function initStorage() {
-  // só garante que o DB foi inicializado
-  getDB();
+  getDB(); 
 }

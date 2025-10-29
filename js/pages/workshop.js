@@ -56,8 +56,8 @@ export function WorkshopPage(container, db, save) {
     const entry = {
       id: uuid(),
       userId,
-      date,           // YYYY-MM-DD
-      mode,           // PRESENCIAL | AVANCO
+      date,         
+      mode,          
       createdAtISO: nowISO(),
       status: "PENDENTE",
       dpjComment: ""
@@ -72,7 +72,7 @@ export function WorkshopPage(container, db, save) {
 
   function renderTable(){
     const rows = db.workshops
-      .filter(w => w.status === "PENDENTE") /* só pendentes: some após aprovação */
+      .filter(w => w.status === "PENDENTE")
       .slice(0,100)
       .map(w=>{
         const user = db.users.find(u=>u.id===w.userId)?.name || "?";
