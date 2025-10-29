@@ -4,16 +4,16 @@ import { STORAGE_KEY } from "./storage.js";
 /** Liga/desliga rápido */
 export const REALTIME_ENABLED = true;
 
-/** SUA API KEY DO ABLY (ok para demo) */
+/** SUA API KEY DO ABLY */
 const ABLY_API_KEY = "fCROew.ZQIfmA:Olz_8dPLXpnPLlP4oaoETLVDva-RY0c-axlWt49sYSQ";
-
-/** canal único do app */
 const CHANNEL_NAME = "byron-week-db";
 
 /** runtime */
 let client = null;
 let channel = null;
 const ORIGIN = (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Math.random());
+
+function log(...a){ try{ console.log("[rt]", ...a);}catch{} }
 
 /** carrega SDK Ably (CDN) */
 function loadAbly() {
@@ -27,42 +27,54 @@ function loadAbly() {
   });
 }
 
-/** Estado local atual (para responder snapshot) */
 function getLocalDB() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); }
   catch { return null; }
 }
 
-/** aplica DB recebido e avisa a UI */
 function applyDB(payload) {
   if (!payload) return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   document.dispatchEvent(new CustomEvent("db:changed"));
 }
 
-/** Inicia e assina os tópicos */
 export async function rtInit() {
   if (!REALTIME_ENABLED) return;
   const Ably = await loadAbly();
+
   client = new Ably.Realtime(ABLY_API_KEY);
+  client.connection.on((st)=> log("conn", st.current, st.reason || ""));
   channel = client.channels.get(CHANNEL_NAME);
 
-  // 1) Recebe “diffs” (salvamentos) e aplica
+  // Presence: entrar no canal (pra ver quem está online)
+  channel.presence.enter({ origin: ORIGIN }, (err)=>{
+    if (err) log("presence enter err", err);
+  });
+
+  // Recebe diffs de DB
   channel.subscribe("db", (msg) => {
     const { payload, origin } = msg.data || {};
     if (!payload) return;
-    if (origin === ORIGIN) return; // ignora eco
-    // console.log("[rt] db received");
+    if (origin === ORIGIN) return;
+    log("db received");
     applyDB(payload);
   });
 
-  // 2) Handshake de snapshot: quem entra pede; quem já tem responde
+  // Handshake de snapshot (pedido/resposta)
+  let gotSnapshot = false;
+
   channel.subscribe("req-snapshot", (msg) => {
     const { origin } = msg.data || {};
-    if (origin === ORIGIN) return; // não responda a si mesmo
+    if (origin === ORIGIN) return;
     const db = getLocalDB();
-    if (db) {
-      // console.log("[rt] answering snapshot");
+    const hasData = !!db && (
+      (db.logs && db.logs.length) ||
+      (db.presence && db.presence.length) ||
+      (db.workshops && db.workshops.length) ||
+      (db.components && db.components.length)
+    );
+    if (hasData) {
+      log("answering snapshot");
       channel.publish("snapshot", { origin: ORIGIN, payload: db });
     }
   });
@@ -70,19 +82,51 @@ export async function rtInit() {
   channel.subscribe("snapshot", (msg) => {
     const { payload, origin } = msg.data || {};
     if (!payload || origin === ORIGIN) return;
-    // console.log("[rt] snapshot received");
+    gotSnapshot = true;
+    log("snapshot received");
     applyDB(payload);
   });
 
-  // assim que conectar, peça snapshot aos outros
-  channel.once("attached", () => {
-    // console.log("[rt] channel attached, requesting snapshot");
+  // Canal pronto → pedir snapshot; se ninguém responder, faz fallback
+  channel.once("attached", async () => {
+    log("attached → requesting snapshot");
     channel.publish("req-snapshot", { origin: ORIGIN });
+
+    setTimeout(async () => {
+      if (gotSnapshot) return;
+
+      // Se ninguém respondeu, e eu tenho dados, publico um snapshot (seed)
+      const db = getLocalDB();
+      const hasData = !!db && (
+        (db.logs && db.logs.length) ||
+        (db.presence && db.presence.length) ||
+        (db.workshops && db.workshops.length) ||
+        (db.components && db.components.length)
+      );
+      if (hasData) {
+        log("fallback: publishing my snapshot");
+        channel.publish("db", { origin: ORIGIN, payload: db });
+      } else {
+        log("fallback: no data to publish");
+      }
+    }, 1500);
   });
+
+  // --- utilidades de debug expostas no window ---
+  window.__rt = {
+    ping: () => channel.publish("ping", { from: ORIGIN, t: Date.now() }),
+    state: () => ({ hasClient: !!client, hasChannel: !!channel }),
+    presence: async () => {
+      const m = await channel.presence.get();
+      log("presence:", m.map(x=>x.clientId || x.connectionId));
+      return m;
+    }
+  };
+  channel.subscribe("ping", (msg)=> log("ping from", msg.data?.from));
 }
 
-/** Publica o DB após qualquer setDB/resetDB */
 export function rtPublish(db) {
   if (!REALTIME_ENABLED || !channel) return;
+  log("publish db");
   channel.publish("db", { origin: ORIGIN, payload: db });
 }

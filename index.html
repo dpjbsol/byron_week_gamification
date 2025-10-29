@@ -27,14 +27,15 @@
   </footer>
 
 <script type="module">
-  import "./js/utils.js";
-  import { initStorage } from "./js/storage.js?v=3";  
-  import { rtInit } from "./js/realtime.js?v=3";       
-  import { mountApp } from "./js/app.js?v=3";          
+  import "./js/utils.js?v=4";
+  import { initStorage } from "./js/storage.js?v=4";
+  import { rtInit } from "./js/realtime.js?v=4";
+  import { mountApp } from "./js/app.js?v=4";
 
   initStorage();
-  rtInit();                                           
+  rtInit();
   mountApp(document.getElementById("app"));
 </script>
+
 </body>
 </html>
