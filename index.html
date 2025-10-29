@@ -26,15 +26,15 @@
     <small>Funciona 100% local (sem backend). Horário: America/Sao_Paulo.</small>
   </footer>
 
-  <script type="module">
-    import "./js/utils.js";
-    import { initStorage } from "./js/storage.js";
-    import { rtInit } from "./js/realtime.js";   
-    import { mountApp } from "./js/app.js";
+<script type="module">
+  import "./js/utils.js";
+  import { initStorage } from "./js/storage.js?v=3";  
+  import { rtInit } from "./js/realtime.js?v=3";       
+  import { mountApp } from "./js/app.js?v=3";          
 
-    initStorage();
-    rtInit();                                    
-    mountApp(document.getElementById("app"));
-  </script>
+  initStorage();
+  rtInit();                                           
+  mountApp(document.getElementById("app"));
+</script>
 </body>
 </html>
