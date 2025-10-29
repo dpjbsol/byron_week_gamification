@@ -29,8 +29,11 @@
   <script type="module">
     import "./js/utils.js";
     import { initStorage } from "./js/storage.js";
+    import { rtInit } from "./js/realtime.js";   
     import { mountApp } from "./js/app.js";
+
     initStorage();
+    rtInit();                                    
     mountApp(document.getElementById("app"));
   </script>
 </body>

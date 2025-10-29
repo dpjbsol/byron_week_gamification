@@ -1,4 +1,5 @@
 import { uuid, nowISO } from "./utils.js";
+import { rtPublish } from "./realtime.js";
 
 export const STORAGE_KEY = "byron_week_gamify_v1";
 const KEY = STORAGE_KEY;
@@ -129,8 +130,9 @@ export function getDB() {
 
 export function setDB(db) {
   const norm = normalizeDB(db);
-  localStorage.setItem(KEY, JSON.stringify(norm));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(norm));
   document.dispatchEvent(new CustomEvent("db:changed"));
+  rtPublish(norm); 
   return norm;
 }
 
@@ -139,6 +141,7 @@ export function resetDB(hard=false) {
   const fresh = normalizeDB(deepClone(initial));
   localStorage.setItem(KEY, JSON.stringify(fresh));
   document.dispatchEvent(new CustomEvent("db:changed"));
+  rtPublish(fresh);   
   return fresh;
 }
 
