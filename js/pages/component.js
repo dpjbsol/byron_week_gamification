@@ -49,10 +49,12 @@ export function ComponentPage(container, db, save) {
 
       <section>
         <h3>Minhas entregas</h3>
-        <table class="table">
-          <thead><tr><th>Componente</th><th>Etapa</th><th>Flags</th><th>Status</th></tr></thead>
-          <tbody id="c-list"></tbody>
-        </table>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Componente</th><th>Etapa</th><th>Flags</th><th>Status</th></tr></thead>
+            <tbody id="c-list"></tbody>
+          </table>
+        </div>
       </section>
     </div>
   `;
@@ -107,7 +109,7 @@ export function ComponentPage(container, db, save) {
 
   function renderTable(){
     const rows = db.components
-      .filter(c => c.status === "PENDENTE") 
+      .filter(c => c.status === "PENDENTE")
       .slice(0,100)
       .map(c=>{
         const pts = scoreComponent(db, c);
