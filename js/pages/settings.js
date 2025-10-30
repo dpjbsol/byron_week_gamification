@@ -1,3 +1,4 @@
+// js/pages/settings.js
 import { getDB, setDB } from "../storage.js";
 
 export function SettingsPage(container, db, save) {
@@ -9,32 +10,72 @@ export function SettingsPage(container, db, save) {
     <div class="grid cols-3">
       <section class="panel">
         <h3>Pontos</h3>
-        <label>Palestra (padrão) <input id="pt-lecture" type="number" value="${cfg.points.lecture}"/></label>
-        <label>Palestra (alternativo) <input id="pt-lecture-alt" type="number" value="${cfg.points.lectureAlt}"/></label>
-        <label><input type="checkbox" id="flag-lecture-alt" ${cfg.flags.lectureUsesAlt?'checked':''}/> Usar alternativo (35)</label>
-        <label>Oficina por dia <input id="pt-work" type="number" value="${cfg.points.workshopPerDay}"/></label>
-        <label>Ideia <input id="pt-idea" type="number" value="${cfg.points.idea}"/></label>
-        <label>Figma <input id="pt-figma" type="number" value="${cfg.points.figma}"/></label>
-        <label>Código+Doc <input id="pt-codedoc" type="number" value="${cfg.points.codeDoc}"/></label>
+
+        <label>Palestra (2 checks: in + out)
+          <input id="pt-lecture-full" type="number" min="0" value="${cfg.points.lectureFull}">
+        </label>
+
+        <label>Palestra (1 check: in OU out)
+          <input id="pt-lecture-single" type="number" min="0" value="${cfg.points.lectureSingle}">
+        </label>
+
+        <label>Oficina por dia
+          <input id="pt-work" type="number" min="0" value="${cfg.points.workshopPerDay}">
+        </label>
+
+        <label>Ideia
+          <input id="pt-idea" type="number" min="0" value="${cfg.points.idea}">
+        </label>
+
+        <label>Figma
+          <input id="pt-figma" type="number" min="0" value="${cfg.points.figma}">
+        </label>
+
+        <label>Código+Doc
+          <input id="pt-codedoc" type="number" min="0" value="${cfg.points.codeDoc}">
+        </label>
       </section>
 
       <section class="panel">
         <h3>Multiplicadores</h3>
-        <label>Salinha padrão <input id="mult-salinha" type="number" step="0.05" value="${cfg.multipliers.salinha}"/></label>
-        <label>Salinha (segunda feriado) <input id="mult-salinha-mon" type="number" step="0.05" value="${cfg.multipliers.salinhaMondayHoliday}"/></label>
-        <label>Dificuldade Base <input id="diff-base" type="number" step="0.05" value="${cfg.multipliers.difficulty.Base}"/></label>
-        <label>Dificuldade Médio <input id="diff-mid" type="number" step="0.05" value="${cfg.multipliers.difficulty['Médio']}"/></label>
-        <label>Dificuldade Difícil <input id="diff-hard" type="number" step="0.05" value="${cfg.multipliers.difficulty['Difícil']}"/></label>
+        <label>Salinha padrão
+          <input id="mult-salinha" type="number" step="0.05" value="${cfg.multipliers.salinha}">
+        </label>
+        <label>Salinha (segunda/feriado)
+          <input id="mult-salinha-mon" type="number" step="0.05" value="${cfg.multipliers.salinhaMondayHoliday}">
+        </label>
+        <label>Dificuldade Base
+          <input id="diff-base" type="number" step="0.05" value="${cfg.multipliers.difficulty.Base}">
+        </label>
+        <label>Dificuldade Médio
+          <input id="diff-mid" type="number" step="0.05" value="${cfg.multipliers.difficulty['Médio']}">
+        </label>
+        <label>Dificuldade Difícil
+          <input id="diff-hard" type="number" step="0.05" value="${cfg.multipliers.difficulty['Difícil']}">
+        </label>
       </section>
 
       <section class="panel">
         <h3>Janelas e Fechamento</h3>
-        <label>Validação DPJ (início) <input id="win-start" type="time" value="${cfg.windows.dpjStart}"/></label>
-        <label>Validação DPJ (fim) <input id="win-end" type="time" value="${cfg.windows.dpjEnd}"/></label>
-        <label>Cutoff diário (oficina) <input id="win-cutoff" type="time" value="${cfg.windows.dayCutoff}"/></label>
-        <label>Segunda (feriado) <input id="flag-mon" type="date" value="${cfg.flags.mondayHolidayDate}"/></label>
-        <label><input type="checkbox" id="closing-enabled" ${cfg.closing?.enabled?'checked':''}/> Bloquear lançamentos</label>
-        <label>Data/hora de fechamento <input id="closing-at" type="datetime-local" value="${cfg.closing?.closeAt || ""}"/></label>
+        <label>Validação DPJ (início)
+          <input id="win-start" type="time" value="${cfg.windows.dpjStart}">
+        </label>
+        <label>Validação DPJ (fim)
+          <input id="win-end" type="time" value="${cfg.windows.dpjEnd}">
+        </label>
+        <label>Cutoff diário (oficina)
+          <input id="win-cutoff" type="time" value="${cfg.windows.dayCutoff}">
+        </label>
+        <label>Segunda (feriado)
+          <input id="flag-mon" type="date" value="${cfg.flags.mondayHolidayDate}">
+        </label>
+        <label>
+          <input type="checkbox" id="closing-enabled" ${cfg.closing?.enabled?'checked':''}>
+          Bloquear lançamentos
+        </label>
+        <label>Data/hora de fechamento
+          <input id="closing-at" type="datetime-local" value="${cfg.closing?.closeAt || ""}">
+        </label>
       </section>
     </div>
 
@@ -65,26 +106,30 @@ export function SettingsPage(container, db, save) {
 
   const $ = (q)=> container.querySelector(q);
 
+  /* ----- Salvar config ----- */
   $("#save").onclick = ()=>{
-    cfg.points.lecture = Number($("#pt-lecture").value);
-    cfg.points.lectureAlt = Number($("#pt-lecture-alt").value);
-    cfg.flags.lectureUsesAlt = $("#flag-lecture-alt").checked;
-    cfg.points.workshopPerDay = Number($("#pt-work").value);
-    cfg.points.idea = Number($("#pt-idea").value);
-    cfg.points.figma = Number($("#pt-figma").value);
-    cfg.points.codeDoc = Number($("#pt-codedoc").value);
+    // Pontos
+    cfg.points.lectureFull   = Number($("#pt-lecture-full").value || 0);
+    cfg.points.lectureSingle = Number($("#pt-lecture-single").value || 0);
+    cfg.points.workshopPerDay= Number($("#pt-work").value || 0);
+    cfg.points.idea          = Number($("#pt-idea").value || 0);
+    cfg.points.figma         = Number($("#pt-figma").value || 0);
+    cfg.points.codeDoc       = Number($("#pt-codedoc").value || 0);
 
-    cfg.multipliers.salinha = Number($("#mult-salinha").value);
-    cfg.multipliers.salinhaMondayHoliday = Number($("#mult-salinha-mon").value);
-    cfg.multipliers.difficulty.Base = Number($("#diff-base").value);
-    cfg.multipliers.difficulty["Médio"] = Number($("#diff-mid").value);
+    // Multiplies
+    cfg.multipliers.salinha               = Number($("#mult-salinha").value);
+    cfg.multipliers.salinhaMondayHoliday  = Number($("#mult-salinha-mon").value);
+    cfg.multipliers.difficulty.Base       = Number($("#diff-base").value);
+    cfg.multipliers.difficulty["Médio"]   = Number($("#diff-mid").value);
     cfg.multipliers.difficulty["Difícil"] = Number($("#diff-hard").value);
 
-    cfg.windows.dpjStart = $("#win-start").value;
-    cfg.windows.dpjEnd = $("#win-end").value;
-    cfg.windows.dayCutoff = $("#win-cutoff").value;
+    // Janelas
+    cfg.windows.dpjStart   = $("#win-start").value;
+    cfg.windows.dpjEnd     = $("#win-end").value;
+    cfg.windows.dayCutoff  = $("#win-cutoff").value;
     cfg.flags.mondayHolidayDate = $("#flag-mon").value;
 
+    // Fechamento
     cfg.closing = cfg.closing || {};
     cfg.closing.enabled = $("#closing-enabled").checked;
     cfg.closing.closeAt = $("#closing-at").value;
@@ -94,6 +139,7 @@ export function SettingsPage(container, db, save) {
     alert("Configurações salvas!");
   };
 
+  /* ----- Reset “soft” e “hard” ----- */
   $("#reset").onclick = ()=>{
     const keep = getDB();
     setDB(keep);
@@ -107,6 +153,7 @@ export function SettingsPage(container, db, save) {
     location.reload();
   };
 
+  /* ----- Segurança (DPJ) ----- */
   $("#sec-save").onclick = ()=>{
     const v = $("#sec-dpj").value.trim();
     db.config.security = db.config.security || {};

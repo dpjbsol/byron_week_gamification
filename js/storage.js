@@ -1,3 +1,4 @@
+// js/storage.js
 import { uuid, nowISO } from "./utils.js";
 import { rtPublish } from "./realtime.js";
 
@@ -9,42 +10,35 @@ function deepClone(obj) {
   catch { return JSON.parse(JSON.stringify(obj)); }
 }
 
+/* ===== Seed de config (novo modelo) ===================================== */
 const seedConfig = {
   points: {
-    lecture: 25,           
-    lectureAlt: 35,
+    lectureFull: 35,     // 2 checks (in + out)
+    lectureSingle: 20,   // 1 check (in OU out)
     workshopPerDay: 30,
     idea: 20,
     figma: 40,
-    codeDoc: 70
+    codeDoc: 70,
   },
   multipliers: {
-    difficulty: {
-      "Base": 1.00,
-      "Médio": 1.20,
-      "Difícil": 1.30
-    },
+    difficulty: { "Base": 1.00, "Médio": 1.20, "Difícil": 1.30 },
     salinha: 1.20,
-    salinhaMondayHoliday: 1.10
+    salinhaMondayHoliday: 1.10,
   },
   windows: {
     dpjStart: "13:30",
     dpjEnd: "17:30",
-    dayCutoff: "23:59"
+    dayCutoff: "23:59",
   },
   flags: {
-    mondayHolidayDate: "", 
-    lectureUsesAlt: false  
+    mondayHolidayDate: "",
+    // (removido no novo modelo: lectureUsesAlt)
   },
-  closing: {
-    enabled: false,
-    closeAt: ""
-  },
-  security: {
-    dpjPassword: ""
-  }
+  closing: { enabled: false, closeAt: "" },
+  security: { dpjPassword: "" },
 };
 
+/* ===== DB inicial ======================================================= */
 const initial = {
   config: seedConfig,
   users: [
@@ -75,33 +69,54 @@ const initial = {
     { id: uuid(), name: "Talles Alves de Morais" },
     { id: uuid(), name: "Victor Hugo Rodrigues Pereira" },
     { id: uuid(), name: "Victória Shirley Avelino da Silva" },
-    { id: uuid(), name: "Vinicius Kody Murakami" }
+    { id: uuid(), name: "Vinicius Kody Murakami" },
+    { id: uuid(), name: "Davi Lorena" },
+    { id: uuid(), name: "Felipe Augusto" },
+    { id: uuid(), name: "Ismael" },
+    { id: uuid(), name: "Thiago Jose da Cruz" },
+    { id: uuid(), name: "Breno Paiola" },
+    { id: uuid(), name: "Lucas Melo" },
   ],
-  sessions: [],  
-  presence: [],   
-  workshops: [],  
+  sessions: [],
+  presence: [],
+  workshops: [],
   components: [],
-  logs: []        
+  logs: [],
 };
 
+/* ===== Normalização + Migração ========================================== */
 function normalizeDB(db) {
   const out = db || {};
   out.config = out.config || deepClone(seedConfig);
 
-  out.config.points        = { ...seedConfig.points, ...(out.config.points || {}) };
-  out.config.multipliers   = {
+  // Merge estrutural
+  out.config.points      = { ...seedConfig.points, ...(out.config.points || {}) };
+  out.config.multipliers = {
     ...seedConfig.multipliers,
     ...(out.config.multipliers || {}),
     difficulty: {
       ...seedConfig.multipliers.difficulty,
-      ...(out.config.multipliers?.difficulty || {})
-    }
+      ...(out.config.multipliers?.difficulty || {}),
+    },
   };
-  out.config.windows       = { ...seedConfig.windows, ...(out.config.windows || {}) };
-  out.config.flags         = { ...seedConfig.flags,   ...(out.config.flags || {}) };
-  out.config.closing       = { ...seedConfig.closing, ...(out.config.closing || {}) };
-  out.config.security      = { ...seedConfig.security, ...(out.config.security || {}) };
+  out.config.windows  = { ...seedConfig.windows,  ...(out.config.windows || {}) };
+  out.config.flags    = { ...seedConfig.flags,    ...(out.config.flags   || {}) };
+  out.config.closing  = { ...seedConfig.closing,  ...(out.config.closing || {}) };
+  out.config.security = { ...seedConfig.security, ...(out.config.security|| {}) };
 
+  // 🔁 Migração: se vier de versão antiga com lecture/lectureAlt e flag lectureUsesAlt
+  const p = out.config.points || {};
+  if (p.lecture != null || p.lectureAlt != null) {
+    if (p.lectureFull == null)   p.lectureFull   = (typeof p.lectureAlt === "number" ? p.lectureAlt : seedConfig.points.lectureFull);
+    if (p.lectureSingle == null) p.lectureSingle = (typeof p.lecture    === "number" ? p.lecture    : seedConfig.points.lectureSingle);
+    delete p.lecture;
+    delete p.lectureAlt;
+  }
+  if ("lectureUsesAlt" in (out.config.flags || {})) {
+    delete out.config.flags.lectureUsesAlt; // não usamos mais
+  }
+
+  // Arrays
   out.users      = Array.isArray(out.users)      ? out.users      : [];
   out.sessions   = Array.isArray(out.sessions)   ? out.sessions   : [];
   out.presence   = Array.isArray(out.presence)   ? out.presence   : [];
@@ -112,6 +127,7 @@ function normalizeDB(db) {
   return out;
 }
 
+/* ===== API pública de storage =========================================== */
 export function getDB() {
   const raw = localStorage.getItem(KEY);
   if (!raw) {
@@ -132,7 +148,7 @@ export function setDB(db) {
   const norm = normalizeDB(db);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(norm));
   document.dispatchEvent(new CustomEvent("db:changed"));
-  rtPublish(norm); 
+  rtPublish(norm);
   return norm;
 }
 
@@ -141,7 +157,7 @@ export function resetDB(hard=false) {
   const fresh = normalizeDB(deepClone(initial));
   localStorage.setItem(KEY, JSON.stringify(fresh));
   document.dispatchEvent(new CustomEvent("db:changed"));
-  rtPublish(fresh);   
+  rtPublish(fresh);
   return fresh;
 }
 
@@ -154,10 +170,10 @@ export function updateDB(mutator) {
 export function addLog(db, { userId, kind, refId, points, details }) {
   db.logs.unshift({
     id: uuid(), userId, kind, refId, points,
-    details, createdAtISO: nowISO()
+    details, createdAtISO: nowISO(),
   });
 }
 
 export function initStorage() {
-  getDB(); 
+  getDB(); // força criar/normalizar no primeiro load
 }
