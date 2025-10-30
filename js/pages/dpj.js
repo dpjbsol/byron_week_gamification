@@ -1,7 +1,6 @@
-// js/pages/dpj.js
 import { scorePresence, scoreWorkshop, scoreComponent } from "../rules.js";
 import { addLog } from "../storage.js";
-import { ensureDpjAccess } from "../guard.js"; // usa o guard compartilhado
+import { ensureDpjAccess } from "../guard.js"; // guard compartilhado
 
 export function DPJPage(container, db, save) {
   if (!ensureDpjAccess(db, save, container)) return;
@@ -17,10 +16,12 @@ export function DPJPage(container, db, save) {
             <input id="show-approved-pres" type="checkbox"> Mostrar aprovados
           </label>
         </div>
-        <table class="table">
-          <thead><tr><th>Participante</th><th>Sessão</th><th>Check-in/out</th><th>Ação</th></tr></thead>
-          <tbody id="t-pres"></tbody>
-        </table>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Participante</th><th>Sessão</th><th>Check-in/out</th><th>Ação</th></tr></thead>
+            <tbody id="t-pres"></tbody>
+          </table>
+        </div>
       </section>
 
       <section class="panel">
@@ -30,10 +31,12 @@ export function DPJPage(container, db, save) {
             <input id="show-approved-work" type="checkbox"> Mostrar aprovados
           </label>
         </div>
-        <table class="table">
-          <thead><tr><th>Participante</th><th>Data</th><th>Modo</th><th>Ação</th></tr></thead>
-          <tbody id="t-work"></tbody>
-        </table>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Participante</th><th>Data</th><th>Modo</th><th>Ação</th></tr></thead>
+            <tbody id="t-work"></tbody>
+          </table>
+        </div>
       </section>
 
       <section class="panel">
@@ -43,10 +46,12 @@ export function DPJPage(container, db, save) {
             <input id="show-approved-comp" type="checkbox"> Mostrar aprovados
           </label>
         </div>
-        <table class="table">
-          <thead><tr><th>Participante</th><th>Componente</th><th>Etapa</th><th>Flags</th><th>Ação</th></tr></thead>
-          <tbody id="t-comp"></tbody>
-        </table>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Participante</th><th>Componente</th><th>Etapa</th><th>Flags</th><th>Ação</th></tr></thead>
+            <tbody id="t-comp"></tbody>
+          </table>
+        </div>
       </section>
     </div>
   `;
@@ -85,6 +90,7 @@ export function DPJPage(container, db, save) {
     save(db);
     renderAll();
   }
+
   function deleteItem(arrayRef, id) {
     if (!confirm("Excluir definitivamente este lançamento? Esta ação não pode ser desfeita.")) return;
     const idx = arrayRef.findIndex(x => x.id === id);

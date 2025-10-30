@@ -48,10 +48,12 @@ export function PresencePage(container, db, save) {
 
       <section>
         <h3>Minhas marcações (pendentes)</h3>
-        <table class="table">
-          <thead><tr><th>Participante</th><th>Sessão</th><th>Check-in/out</th><th>Status</th></tr></thead>
-          <tbody id="p-list"></tbody>
-        </table>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Participante</th><th>Sessão</th><th>Check-in/out</th><th>Status</th></tr></thead>
+            <tbody id="p-list"></tbody>
+          </table>
+        </div>
       </section>
     </div>
   `;

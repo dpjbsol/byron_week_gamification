@@ -1,6 +1,7 @@
+// js/pages/ranking.js
 import { fmtNum } from "../utils.js";
 import { scorePresence, scoreWorkshop, scoreComponent } from "../rules.js";
-import { getDB } from "../storage.js"; 
+import { getDB, STORAGE_KEY } from "../storage.js"; // STORAGE_KEY para escutar a chave correta
 
 export function RankingPage(container, dbInitial) {
   let destroyed = false;
@@ -19,8 +20,11 @@ export function RankingPage(container, dbInitial) {
       const presCount = db.presence.filter(p=>p.userId===u.id && p.status==="APROVADO").length;
       const firstLog = db.logs.filter(l=>l.userId===u.id).slice(-1)[0]?.createdAtISO || "9999-12-31T00:00:00";
 
-      return { user: u.name, total: presPts + workPts + compPts,
-               tie: { codeDocs, workCount, presCount, firstLog } };
+      return {
+        user: u.name,
+        total: presPts + workPts + compPts,
+        tie: { codeDocs, workCount, presCount, firstLog }
+      };
     }).sort((a,b)=>{
       if (b.total !== a.total) return b.total - a.total;
       if (b.tie.codeDocs !== a.tie.codeDocs) return b.tie.codeDocs - a.tie.codeDocs;
@@ -35,34 +39,40 @@ export function RankingPage(container, dbInitial) {
     const scores = computeScores(db);
     container.innerHTML = `
       <h2>Ranking</h2>
-      <table class="table">
-        <thead><tr><th>#</th><th>Participante</th><th>Pontos</th><th>Desempate</th></tr></thead>
-        <tbody>
-          ${scores.map((s,i)=>`
-            <tr>
-              <td>${i+1}</td>
-              <td>${s.user}</td>
-              <td class="kpi">${fmtNum(s.total)}</td>
-              <td class="help">
-                Code+Doc: ${s.tie.codeDocs} · Oficinas: ${s.tie.workCount} · Palestras: ${s.tie.presCount}
-              </td>
-            </tr>
-          `).join("")}
-        </tbody>
-      </table>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>#</th><th>Participante</th><th>Pontos</th><th>Desempate</th></tr></thead>
+          <tbody>
+            ${scores.map((s,i)=>`
+              <tr>
+                <td>${i+1}</td>
+                <td>${s.user}</td>
+                <td class="kpi">${fmtNum(s.total)}</td>
+                <td class="help">
+                  Code+Doc: ${s.tie.codeDocs} · Oficinas: ${s.tie.workCount} · Palestras: ${s.tie.presCount}
+                </td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
     `;
   }
 
+  // render inicial
   render(dbInitial);
 
+  // re-render quando o DB local mudar (por este ou outro tab)
   const onDbChanged = () => render(getDB());
   document.addEventListener("db:changed", onDbChanged);
 
+  // re-render ao receber alterações pelo storage (outra aba)
   const onStorage = (e) => {
-    if (e.key === "byron.db") render(getDB());
+    if (e.key === STORAGE_KEY) render(getDB());
   };
   window.addEventListener("storage", onStorage);
 
+  // opcional: limpar handlers quando o container for descartado
   container.__destroy = () => {
     destroyed = true;
     document.removeEventListener("db:changed", onDbChanged);

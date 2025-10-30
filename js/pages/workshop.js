@@ -31,10 +31,12 @@ export function WorkshopPage(container, db, save) {
 
       <section>
         <h3>Meus registros</h3>
-        <table class="table">
-          <thead><tr><th>Participante</th><th>Data</th><th>Modo</th><th>Status</th></tr></thead>
-          <tbody id="w-list"></tbody>
-        </table>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Participante</th><th>Data</th><th>Modo</th><th>Status</th></tr></thead>
+            <tbody id="w-list"></tbody>
+          </table>
+        </div>
       </section>
     </div>
   `;
@@ -56,8 +58,8 @@ export function WorkshopPage(container, db, save) {
     const entry = {
       id: uuid(),
       userId,
-      date,         
-      mode,          
+      date,
+      mode,
       createdAtISO: nowISO(),
       status: "PENDENTE",
       dpjComment: ""

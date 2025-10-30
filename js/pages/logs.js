@@ -1,5 +1,5 @@
 import { downloadCSV, fmtDateTime } from "../utils.js";
-import { ensureDpjAccess } from "../guard.js"; 
+import { ensureDpjAccess } from "../guard.js";
 
 export function LogsPage(container, db, save) {
   if (!ensureDpjAccess(db, save, container)) return;
@@ -7,10 +7,12 @@ export function LogsPage(container, db, save) {
     <h2>Auditoria & Export</h2>
     <div class="grid">
       <button id="export">Exportar CSV</button>
-      <table class="table">
-        <thead><tr><th>Data/Hora</th><th>Participante</th><th>Tipo</th><th>Pontos</th><th>Detalhes</th></tr></thead>
-        <tbody id="log-list"></tbody>
-      </table>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Data/Hora</th><th>Participante</th><th>Tipo</th><th>Pontos</th><th>Detalhes</th></tr></thead>
+          <tbody id="log-list"></tbody>
+        </table>
+      </div>
     </div>
   `;
 
